@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include <iostream>
 #include <math.h>
+
 #include <gl/glut.h>
+#include <glm.hpp>
+#include <gtc/type_ptr.hpp>
 
 #include "QuadMesh.c"
 
 #define DEG2RAD 3.14159f/180.0f
+
 
 void initOpenGL(int, int);
 void displayHandler(void);
@@ -40,8 +44,10 @@ bool mmDown = false;
 
 // Camera
 int netDiffX = 0; // degrees for yaw
-int netDiffY = 0; // degrees for pitch
-int startX, startY, endX, endY, currDiffX, currDiffY;
+int netDiffY = -20; // degrees for pitch
+int startX, startY, endX, endY;
+int currDiffX = 0;
+int currDiffY = 0;
 float yaw = 0;
 float pitch = 0;
 float sensitivity = 1;
@@ -109,6 +115,10 @@ void reshapeHandler(int w, int h) {
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
+	pitch = -(netDiffY + currDiffY) * DEG2RAD;
+	yaw = (netDiffX + currDiffX) * DEG2RAD;
+
 	gluLookAt(
 		// Camera rotations
 		cameraRadius * cos(pitch) * sin(yaw),
@@ -167,6 +177,44 @@ void mouseButtonHandler(int button, int state, int x, int y) {
 			currDiffY = 0;
 		}
 	}
+
+	// Ray Casting (Using Anton Gerdelan's explanation)
+	if (button == 0 && state == 0) {
+		// Normalized Device Coordinates ( viewport (x,y) coordinates to ([-1:1], [-1,1]) )
+		float nds_x = (2.0f * x) / vWidth - 1.0f;
+		float nds_y = 1.0f - (2.0f * y) / vHeight;
+		float nds_z = 1;
+		glm::vec3 ray_nds = glm::vec3(nds_x, nds_y, nds_z);
+
+		// Homogeneous Clip Coordinates
+		glm::vec4 ray_clip = glm::vec4(ray_nds[0], ray_nds[1], -1.0f, 1.0f);
+
+		// Eye Coordinates
+		GLfloat tempProj[16];
+		glGetFloatv(GL_PROJECTION_MATRIX, tempProj);
+		glm::mat4 proj_matrix = glm::make_mat4(tempProj);
+		glm::vec4 ray_eye = glm::inverse(proj_matrix) * ray_clip;
+		ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
+
+		// 4d World Coordinates
+		GLfloat tempView[16];
+		glGetFloatv(GL_MODELVIEW_MATRIX, tempView);
+		glm::mat4 view_matrix = glm::make_mat4(tempView);
+		glm::vec3 ray_wor = inverse(view_matrix) * ray_eye;
+		ray_wor = glm::vec3(ray_wor.x, ray_wor.y, ray_wor.z);
+		ray_wor = glm::normalize(ray_wor);
+
+		glm::vec3 terrain_normal = glm::vec3(0, 1, 0);
+		glm::vec3 eye_pos = glm::vec3(cameraRadius * cos(pitch) * sin(yaw), cameraRadius * sin(pitch), cameraRadius * cos(pitch) * cos(yaw));
+		float distance =  -(glm::dot(eye_pos, terrain_normal) + 0) / glm::dot(ray_wor, terrain_normal);// +0 beucase plane is on origin (y=0)
+		glm::vec3 ray_intersect = eye_pos + (ray_wor * distance);
+
+		printf("Distance: %f\n", distance);
+		printf("x:%.2f y:%.2f z:%.2f \n\n", ray_intersect.x, ray_intersect.y, ray_intersect.z);
+
+	}
+
+	// Camera Zoom
 	if (button == 3 && state == 0) cameraRadius -= 0.5;
 	if (button == 4 && state == 0) cameraRadius += 0.5;
 	
@@ -201,7 +249,7 @@ void keyboardInputHandler(unsigned char key, int x, int y) {
 
 void insertBlob(int x, int z) {
 	terrain.vertices[0].position.y += 0.5;
-	printf("X:%f Y:%f Z%f: \n", terrain.vertices[0].normal.x, terrain.vertices[0].normal.y, terrain.vertices[0].normal.z);
+	//printf("X:%f Y:%f Z%f: \n", terrain.vertices[0].normal.x, terrain.vertices[0].normal.y, terrain.vertices[0].normal.z);
 
 	//terrain.quads[31].vertices[0]->position.y += 0.5;
 	//terrain.quads[31].vertices[1]->position.y += 0.5;
