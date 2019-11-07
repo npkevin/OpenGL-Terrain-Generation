@@ -52,7 +52,7 @@ bool lmDown = false;
 std::vector<Metaball> ballList;
 int ballIndex = 0;
 float ballHeight = 5;
-float ballWidth = 0.5;
+float ballWidth = 0.1;
 
 // Camera
 int netDiffX = 0; // degrees for yaw
@@ -154,7 +154,7 @@ void displayHandler(void) {
 
 	// Selector graphic
 	glPushMatrix();
-		if (ballList.size() > 0) glTranslatef(ballList[ballIndex].pos.x, ballList[ballIndex].pos.y + ballHeight + 3, ballList[ballIndex].pos.z);
+		if (ballList.size() > 0) glTranslatef(ballList[ballIndex].pos.x, ballList[ballIndex].height + 3, ballList[ballIndex].pos.z);
 		glRotatef(90, 1, 0, 0);
 		glutSolidCone(0.5, 2, 16, 16);
 	glPopMatrix();
@@ -261,13 +261,16 @@ void keyboardInputHandler(unsigned char key, int x, int y) {
 
 void specialInputHandler(int key, int x, int y) {
 	if (key == GLUT_KEY_RIGHT) {
+		incrementBallSize(-0.01, NULL, ballIndex);
 	}
 	else if (key == GLUT_KEY_LEFT) {
+		incrementBallSize(0.01, NULL, ballIndex);
 	}
-	else if (GLUT_KEY_UP) {
-
+	else if (key == GLUT_KEY_UP) {
+		incrementBallSize(NULL, 0.5, ballIndex);
 	}
-	else if (GLUT_KEY_DOWN) {
+	else if (key ==GLUT_KEY_DOWN) {
+		incrementBallSize(NULL, -0.5, ballIndex);
 	}
 	glutPostRedisplay();
 }
@@ -292,6 +295,9 @@ void updateBallPos(glm::vec3 point, int index) {
 void incrementBallSize(float width, float height, int index) {
 	if (width != NULL) ballList[index].width += width;
 	if (height != NULL) ballList[index].height += height;
+
+	if (ballList[index].width < 0.01) ballList[index].width = 0.01;
+
 	UpdateMesh(&terrain, ballList);
 	glutPostRedisplay();
 }
