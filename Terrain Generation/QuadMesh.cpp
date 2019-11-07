@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <math.h>
+#include <vector>
 #include <gl/glut.h>
 
 #include "QuadMesh.h"
@@ -149,7 +150,7 @@ void DrawMeshQM(QuadMesh* qm, int meshSize)
 {
 	int currentQuad=0;
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); //GL_LINE = wireframe, GL_FILL = solid
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); //GL_LINE = wireframe, GL_FILL = solid
 	glMaterialfv(GL_FRONT, GL_AMBIENT, qm->mat_ambient);
 	glMaterialfv(GL_FRONT, GL_SPECULAR, qm->mat_specular);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, qm->mat_diffuse);
@@ -266,3 +267,22 @@ void ComputeNormalsQM(QuadMesh* qm)
 		}
 	}
 }
+
+
+
+void UpdateMesh(QuadMesh* qm, std::vector<Metaball> blobList) {
+	for (int i = 0; i < qm->maxMeshSize + 1; i++) {
+		for (int j = 0; j < qm->maxMeshSize + 1; j++) {
+			Vector3D pos = qm->vertices[i * (qm->maxMeshSize + 1) + j].position;
+			qm->vertices[i * (qm->maxMeshSize + 1) + j].position.y = 0;
+			pos.y = 0;
+			for (int k = 0; k <= (int)blobList.size() -1; k++) {
+				double distance = sqrt(pow(blobList[k].pos.x - pos.x, 2) + pow(blobList[k].pos.y - pos.y, 2) + pow(blobList[k].pos.z - pos.z, 2));
+				qm->vertices[i * (qm->maxMeshSize + 1) + j].position.y += blobList[k].height * exp(-(blobList[k].width * (distance*distance) ));
+			}
+		}
+	}
+	ComputeNormalsQM(qm);
+}
+
+

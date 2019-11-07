@@ -1,6 +1,13 @@
 #include <stdbool.h>
 #include "Vector3D.h"
 
+typedef struct Metaball {
+	Vector3D pos;
+	double width;
+	double height;
+} Metaball;
+
+
 // Data structure for a vertex
 typedef struct MeshVertex
 {
@@ -40,4 +47,5 @@ bool CreateMemoryQM(QuadMesh* qm);
 bool InitMeshQM(QuadMesh* qm, int meshSize, Vector3D origin, double meshLength, double meshWidth, Vector3D dir1, Vector3D dir2);
 void DrawMeshQM(QuadMesh* qm, int meshSize);
 void FreeMemoryQM(QuadMesh* qm);
+void UpdateMesh(QuadMesh* qm, std::vector<Metaball> bloblist);
 void ComputeNormalsQM(QuadMesh* qm);

@@ -128,9 +128,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="QuadMesh.c" />
+    <ClCompile Include="QuadMesh.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Vector3D.c" />
+    <ClCompile Include="Vector3D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="QuadMesh.h" />
