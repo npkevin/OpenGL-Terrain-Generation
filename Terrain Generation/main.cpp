@@ -23,6 +23,7 @@ void specialInputHandler(int, int, int);
 void insertBall(glm::vec3);
 void updateBallPos(glm::vec3, int ballIndex);
 void incrementBallSize(float width, float height, int index);
+void removeLastBall();
 glm::vec3 rayCast(int x, int y);
 
 int vWidth = 1000;
@@ -89,6 +90,9 @@ int main(int argc, char** argv) {
 }
 
 void initOpenGL(int w, int h) {
+
+	printf("Press F1 for help / key-bindings\n\n");
+
 	// Set up and enable lighting
 	glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
@@ -153,11 +157,14 @@ void displayHandler(void) {
 	DrawMeshQM(&terrain, meshSize);
 
 	// Selector graphic
-	glPushMatrix();
-		if (ballList.size() > 0) glTranslatef(ballList[ballIndex].pos.x, ballList[ballIndex].height + 3, ballList[ballIndex].pos.z);
+	
+	if (ballList.size() > 0) {
+		glPushMatrix();
+		glTranslatef(ballList[ballIndex].pos.x, ballList[ballIndex].height + 3, ballList[ballIndex].pos.z);
 		glRotatef(90, 1, 0, 0);
 		glutSolidCone(0.5, 2, 16, 16);
-	glPopMatrix();
+		glPopMatrix();
+	}
 
 	glLoadIdentity();
 	gluLookAt(
@@ -248,30 +255,62 @@ void keyboardInputHandler(unsigned char key, int x, int y) {
 	}
 
 	// Selecting balls
-	else if (key == '-') {
+	else if (key == 'a') {
 		ballIndex--;
 		if (ballIndex < 0) ballIndex = 0;
 	}
-	else if (key == '=') {
+	else if (key == 'd') {
 		ballIndex++;
 		if (ballIndex > ballList.size() - 1) ballIndex = ballList.size() - 1;
+	}
+
+	// undo
+	else if (key == 'u') {
+		if (ballList.size() > 0) {
+			removeLastBall();
+		}
+	}
+
+	// reset
+	else if (key == 'r') {
+		ballList.clear();
+		UpdateMesh(&terrain, ballList);
 	}
 	glutPostRedisplay();
 }
 
 void specialInputHandler(int key, int x, int y) {
-	if (key == GLUT_KEY_RIGHT) {
-		incrementBallSize(-0.01, NULL, ballIndex);
+
+	if (ballList.size() > 0) {
+		if (key == GLUT_KEY_RIGHT) {
+			incrementBallSize(-0.01, NULL, ballIndex);
+		}
+		else if (key == GLUT_KEY_LEFT) {
+			incrementBallSize(0.01, NULL, ballIndex);
+		}
+		else if (key == GLUT_KEY_UP) {
+			incrementBallSize(NULL, 0.5, ballIndex);
+		}
+		else if (key == GLUT_KEY_DOWN) {
+			incrementBallSize(NULL, -0.5, ballIndex);
+		}
 	}
-	else if (key == GLUT_KEY_LEFT) {
-		incrementBallSize(0.01, NULL, ballIndex);
+
+	if (key == GLUT_KEY_F1) {
+		printf("KEY BINDINGS\n");
+		printf("Right Mouse Button - New Blob\n");
+		printf("Left Mouse Button - Move SELECTED Blob\n");
+		printf("a/d - Traverse Selectable Blobs\n");
+		printf("u - Undo Last Blob\n");
+		printf("r - Reset Blobs\n");
+		printf("\n");
+		printf("CAMERA CONTROLS\n");
+		printf("Middle Mouse Button - Hold to rotate camera\n");
+		printf("Mouse Wheel - Zoom In/Out\n");
+		printf("\n");
+
 	}
-	else if (key == GLUT_KEY_UP) {
-		incrementBallSize(NULL, 0.5, ballIndex);
-	}
-	else if (key ==GLUT_KEY_DOWN) {
-		incrementBallSize(NULL, -0.5, ballIndex);
-	}
+
 	glutPostRedisplay();
 }
 
@@ -296,8 +335,21 @@ void incrementBallSize(float width, float height, int index) {
 	if (width != NULL) ballList[index].width += width;
 	if (height != NULL) ballList[index].height += height;
 
+	// min width
 	if (ballList[index].width < 0.01) ballList[index].width = 0.01;
 
+	//max/min height
+	if (ballList[index].height > 10) ballList[index].height = 10;
+	if (ballList[index].height < -10) ballList[index].height = -10;
+
+
+	UpdateMesh(&terrain, ballList);
+	glutPostRedisplay();
+}
+
+void removeLastBall() {
+	ballList.pop_back();
+	ballIndex = ballList.size() - 1;
 	UpdateMesh(&terrain, ballList);
 	glutPostRedisplay();
 }
